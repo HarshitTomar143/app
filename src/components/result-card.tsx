@@ -10,12 +10,12 @@ interface ResultCardProps {
 
 export default function ResultCard({ icon, label, value, color }: ResultCardProps) {
   return (
-    <Card className="p-4 flex flex-col items-center justify-center space-y-2 transition-all hover:scale-105 hover:shadow-lg bg-card">
-      <div className="flex items-center space-x-3">
+    <Card className="p-4 flex flex-col items-center justify-center space-y-2 transition-all duration-300 hover:scale-105 hover:shadow-xl bg-card border hover:border-primary/20">
+      <div className={cn("p-3 rounded-full bg-secondary/80")}>
         {icon}
-        <span className="text-lg font-medium text-muted-foreground">{label}</span>
       </div>
-      <p className={cn("text-4xl font-bold", color)}>{value}</p>
+      <p className="text-sm font-medium text-muted-foreground pt-2">{label}</p>
+      <p className={cn("text-3xl font-bold", color)}>{value}</p>
     </Card>
   );
 }

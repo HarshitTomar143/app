@@ -76,23 +76,23 @@ export default function OMRSheet() {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {questions.map((q) => (
-          <Card key={q} className="shadow-md hover:shadow-lg transition-shadow bg-card">
+          <Card key={q} className="shadow-sm hover:shadow-lg transition-shadow duration-300 bg-card border">
             <CardHeader className="flex-row items-center justify-between p-4">
-              <CardTitle className="text-primary font-semibold">Q{q}</CardTitle>
+              <CardTitle className="text-lg text-primary font-bold">Question {q}</CardTitle>
             </CardHeader>
             <CardContent className="p-4 pt-0">
               <RadioGroup
                 value={answers[q] || ''}
                 onValueChange={(value) => handleAnswerChange(q.toString(), value)}
                 disabled={isSubmitted || isSubmitting}
-                className="flex space-x-4"
+                className="flex space-x-6"
               >
                 {options.map((option) => (
                   <div key={option} className="flex items-center space-x-2">
-                    <RadioGroupItem value={option} id={`q${q}-${option}`} aria-label={`Question ${q} Option ${option}`} />
-                    <Label htmlFor={`q${q}-${option}`}>{option}</Label>
+                    <RadioGroupItem value={option} id={`q${q}-${option}`} aria-label={`Question ${q} Option ${option}`} className="w-5 h-5"/>
+                    <Label htmlFor={`q${q}-${option}`} className="text-base">{option}</Label>
                   </div>
                 ))}
               </RadioGroup>
@@ -100,37 +100,37 @@ export default function OMRSheet() {
           </Card>
         ))}
       </div>
-      <div className="mt-8 flex justify-center">
+      <div className="mt-10 flex justify-center">
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               size="lg"
-              className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold w-full max-w-xs text-lg"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold w-full max-w-sm text-lg py-6 rounded-full shadow-lg hover:shadow-xl transition-shadow"
               disabled={isSubmitting || isSubmitted}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Evaluating...
                 </>
               ) : isSubmitted ? (
-                'Submitted'
+                'Submitted Successfully'
               ) : (
-                'Submit Answers'
+                'Submit & View Results'
               )}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure you want to submit?</AlertDialogTitle>
+              <AlertDialogTitle>Confirm Submission</AlertDialogTitle>
               <AlertDialogDescription>
-                You will not be able to change your answers after submission. Please review your answers before proceeding.
+                You are about to submit your answers. This action cannot be undone. Are you sure you want to proceed?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
               <AlertDialogAction onClick={processSubmission} className="bg-primary hover:bg-primary/90">
-                Submit
+                Confirm & Submit
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

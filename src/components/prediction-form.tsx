@@ -40,15 +40,15 @@ export default function PredictionForm({ onSubmit }: PredictionFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
         <FormField
           control={form.control}
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Name</FormLabel>
+              <FormLabel>Full Name</FormLabel>
               <FormControl>
-                <Input placeholder="Enter your name" {...field} />
+                <Input placeholder="e.g. John Doe" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -105,7 +105,7 @@ export default function PredictionForm({ onSubmit }: PredictionFormProps) {
           name="state"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>State</FormLabel>
+              <FormLabel>State of Domicile</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -125,7 +125,7 @@ export default function PredictionForm({ onSubmit }: PredictionFormProps) {
           name="pwd"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>PwD (Person with Disability)?</FormLabel>
+              <FormLabel>Disability Status (PwD)</FormLabel>
               <Select onValueChange={field.onChange} defaultValue={field.value}>
                 <FormControl>
                   <SelectTrigger>
@@ -141,7 +141,7 @@ export default function PredictionForm({ onSubmit }: PredictionFormProps) {
             </FormItem>
           )}
         />
-        <Button type="submit" className="w-full">Generate Prompt</Button>
+        <Button type="submit" className="w-full !mt-8" size="lg">Generate Prompt</Button>
       </form>
     </Form>
   );
