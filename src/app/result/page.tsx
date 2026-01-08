@@ -1,17 +1,30 @@
-import { Suspense } from 'react';
+
+'use client';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, XCircle, Target, Percent } from 'lucide-react';
 import ResultCard from '@/components/result-card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import PredictionForm from '@/components/prediction-form';
 
 function ResultsDisplay({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+  const [prompt, setPrompt] = useState<string | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+
   const totalQuestions = parseInt(searchParams?.totalQuestions as string) || 100;
   const attempted = parseInt(searchParams?.attempted as string) || 0;
   const correct = parseInt(searchParams?.correct as string) || 0;
   const wrong = parseInt(searchParams?.wrong as string) || 0;
   const score = parseInt(searchParams?.score as string) || 0;
   const percentage = parseFloat(searchParams?.percentage as string) || 0;
+
+  const handleFormSubmit = (data: any) => {
+    const generatedPrompt = `I am a student named ${data.name}. I scored ${score} out of ${totalQuestions}. I am a ${data.gender} candidate belonging to the ${data.category} category from ${data.state}. I am ${data.pwd === 'yes' ? '' : 'not '}a Person with Disability. Based on these details, what are my chances of getting into a good college and what rank can I expect?`;
+    setPrompt(generatedPrompt);
+    setIsFormOpen(false);
+  };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
@@ -58,11 +71,34 @@ function ResultsDisplay({ searchParams }: { searchParams: { [key: string]: strin
             />
           </div>
           
-          <div className="mt-8 flex justify-center">
+          <div className="mt-8 flex justify-center gap-4">
             <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
               <Link href="/">Take Another Test</Link>
             </Button>
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" variant="outline">Predict Rank and Possibilities</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Provide Your Details</DialogTitle>
+                </DialogHeader>
+                <PredictionForm onSubmit={handleFormSubmit} />
+              </DialogContent>
+            </Dialog>
           </div>
+
+          {prompt && (
+            <Card className="mt-8">
+              <CardHeader>
+                <CardTitle>Generated Prompt</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{prompt}</p>
+              </CardContent>
+            </Card>
+          )}
+
         </CardContent>
       </Card>
     </div>
