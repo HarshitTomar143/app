@@ -50,6 +50,26 @@
         "attemptedCount",
         "percentage"
       ]
+    },
+    "ExamSection": {
+      "title": "Exam Section",
+      "description": "Defines a section of an exam, including its name and the number of questions.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The name of the exam section (e.g., 'Physics')."
+        },
+        "questionCount": {
+          "type": "number",
+          "description": "The number of questions in this section."
+        },
+        "order": {
+          "type": "number",
+          "description": "The display order of the section."
+        }
+      },
+      "required": ["name", "questionCount", "order"]
     }
   },
   "auth": {
@@ -75,8 +95,24 @@
             }
           ]
         }
+      },
+      {
+        "path": "/examSections/{sectionId}",
+        "definition": {
+          "entityName": "ExamSection",
+          "schema": {
+            "$ref": "#/backend/entities/ExamSection"
+          },
+          "description": "Stores the sections of the exam. 'sectionId' is the unique ID for each section.",
+          "params": [
+            {
+              "name": "sectionId",
+              "description": "The unique identifier for the exam section."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "Given the requirement to store user submissions with associated scores and other metrics, and without user authentication, a straightforward collection structure is proposed.  Since there is no authentication, we'll skip path-based ownership. The submissions will be stored in a top-level `submissions` collection. Authorization Independence isn't applicable here, as there are no access controls. QAPs are supported as `list` operations on the submissions collection don't need filtering, given the absence of user roles or permissions.\n\nEach document within the `submissions` collection will represent a single user's submission, containing all the relevant data (answers, score, timestamps, etc.)."
+    "reasoning": "Given the requirement to store user submissions with associated scores and other metrics, and without user authentication, a straightforward collection structure is proposed.  Since there is no authentication, we'll skip path-based ownership. The submissions will be stored in a top-level `submissions` collection. Authorization Independence isn't applicable here, as there are no access controls. QAPs are supported as `list` operations on the submissions collection don't need filtering, given the absence of user roles or permissions.\n\nEach document within the `submissions` collection will represent a single user's submission, containing all the relevant data (answers, score, timestamps, etc.). The `examSections` collection is added to store the dynamic structure of the exam, managed through an admin panel. It is publicly readable but write access should be restricted."
   }
 }

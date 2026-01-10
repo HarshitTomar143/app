@@ -23,8 +23,12 @@ import {
 
 type Answers = { [key: string]: string };
 
-const questions = Array.from({ length: 100 }, (_, i) => i + 1);
 const options = ['A', 'B', 'C', 'D'];
+
+// This will be replaced with data fetched from Firestore
+const sections = [{ name: "General Knowledge", questionCount: 100, order: 1 }];
+const questions = Array.from({ length: 100 }, (_, i) => i + 1);
+
 
 export default function OMRSheet() {
   const [answers, setAnswers] = useState<Answers>({});
@@ -76,30 +80,38 @@ export default function OMRSheet() {
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-        {questions.map((q) => (
-          <Card key={q} className="shadow-sm hover:shadow-lg transition-shadow duration-300 bg-card border">
-            <CardHeader className="flex-row items-center justify-between p-4">
-              <CardTitle className="text-lg text-primary font-bold">Question {q}</CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 pt-0">
-              <RadioGroup
-                value={answers[q] || ''}
-                onValueChange={(value) => handleAnswerChange(q.toString(), value)}
-                disabled={isSubmitted || isSubmitting}
-                className="flex space-x-6"
-              >
-                {options.map((option) => (
-                  <div key={option} className="flex items-center space-x-2">
-                    <RadioGroupItem value={option} id={`q${q}-${option}`} aria-label={`Question ${q} Option ${option}`} className="w-5 h-5"/>
-                    <Label htmlFor={`q${q}-${option}`} className="text-base">{option}</Label>
-                  </div>
-                ))}
-              </RadioGroup>
-            </CardContent>
-          </Card>
+      <div className="space-y-8">
+        {sections.map(section => (
+          <div key={section.name}>
+            <h2 className="text-2xl font-bold tracking-tight text-primary mb-4">{section.name}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+              {Array.from({ length: section.questionCount }, (_, i) => i + 1).map((q) => (
+                <Card key={`${section.name}-${q}`} className="shadow-sm hover:shadow-lg transition-shadow duration-300 bg-card border">
+                  <CardHeader className="flex-row items-center justify-between p-4">
+                    <CardTitle className="text-lg text-primary font-bold">Question {q}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-4 pt-0">
+                    <RadioGroup
+                      value={answers[`${section.name}-${q}`] || ''}
+                      onValueChange={(value) => handleAnswerChange(`${section.name}-${q}`, value)}
+                      disabled={isSubmitted || isSubmitting}
+                      className="flex space-x-6"
+                    >
+                      {options.map((option) => (
+                        <div key={option} className="flex items-center space-x-2">
+                          <RadioGroupItem value={option} id={`q${section.name}-${q}-${option}`} aria-label={`Question ${q} Option ${option}`} className="w-5 h-5"/>
+                          <Label htmlFor={`q${section.name}-${q}-${option}`} className="text-base">{option}</Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
         ))}
       </div>
+
       <div className="mt-10 flex justify-center">
         <AlertDialog>
           <AlertDialogTrigger asChild>
