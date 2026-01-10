@@ -1,0 +1,59 @@
+/**
+ * Core Philosophy:
+ * This ruleset establishes a public, write-once, read-many security model.
+ * It is designed for an application where users, including anonymous ones, can
+ * submit data, but cannot modify or delete any data once it has been submitted.
+ * This prevents public data vandalism while allowing open contributions.
+ *
+ * Data Structure:
+ * All data is stored in a single, top-level collection named `submissions`.
+ * There is no user-specific data nesting, as the application logic does not
+ * require user authentication or data ownership.
+ *
+ * Key Security Decisions:
+ * - Public Read Access: Anyone can read individual submissions or list the
+ *   entire collection. This supports features that display public results.
+ * - Public Create Access: Anyone can create new submissions. This is essential
+ *   for the core functionality of an open OMR submission system.
+ * - No Updates or Deletes: To protect the integrity of the submitted data from
+ *   malicious or accidental modification by anonymous users, all update and
+ *   delete operations are explicitly forbidden. This makes every submission
+ *   immutable after its creation.
+ *
+ * Denormalization for Authorization:
+ * This principle is not applicable here, as there are no ownership or role-based
+ * authorization checks required.
+ *
+ * Structural Segregation:
+ * This principle is not applicable, as all data is considered public and follows
+ * a single access pattern.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description
+     *   Allows any user (anonymous or authenticated) to read and create
+     *   submissions. Critically, it prevents anyone from updating or deleting
+     *   existing submissions to ensure data integrity.
+     * @path
+     *   /submissions/{submissionId}
+     * @allow
+     *   (create) An anonymous user submitting a new OMR sheet.
+     * @deny
+     *   (update) Any user attempting to change the score on a submission that
+     *   has already been created.
+     * @principle
+     *   Protects data integrity by making submissions immutable after creation,
+     *   which is a secure pattern for a public, write-once collection.
+     */
+    match /submissions/{submissionId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if true;
+      allow update: if false;
+      allow delete: if false;
+    }
+  }
+}

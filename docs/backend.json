@@ -1,0 +1,82 @@
+{
+  "entities": {
+    "Submission": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Submission",
+      "type": "object",
+      "description": "Represents a user's submission of answers to the OMR sheet.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the submission."
+        },
+        "answers": {
+          "type": "string",
+          "description": "JSON string representing user's answers. The keys are question numbers (strings), and values are the selected options (A, B, C, or D)."
+        },
+        "submittedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the submission was made.",
+          "format": "date-time"
+        },
+        "score": {
+          "type": "number",
+          "description": "The calculated score of the submission."
+        },
+        "correctCount": {
+          "type": "number",
+          "description": "The number of correct answers in the submission."
+        },
+        "incorrectCount": {
+          "type": "number",
+          "description": "The number of incorrect answers in the submission."
+        },
+        "attemptedCount": {
+          "type": "number",
+          "description": "The number of attempted questions in the submission."
+        },
+        "percentage": {
+          "type": "number",
+          "description": "The overall percentage score of the submission."
+        }
+      },
+      "required": [
+        "id",
+        "answers",
+        "submittedAt",
+        "score",
+        "correctCount",
+        "incorrectCount",
+        "attemptedCount",
+        "percentage"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/submissions/{submissionId}",
+        "definition": {
+          "entityName": "Submission",
+          "schema": {
+            "$ref": "#/backend/entities/Submission"
+          },
+          "description": "Stores OMR submissions data. 'submissionId' is the unique ID for each submission.",
+          "params": [
+            {
+              "name": "submissionId",
+              "description": "The unique identifier for the submission."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "Given the requirement to store user submissions with associated scores and other metrics, and without user authentication, a straightforward collection structure is proposed.  Since there is no authentication, we'll skip path-based ownership. The submissions will be stored in a top-level `submissions` collection. Authorization Independence isn't applicable here, as there are no access controls. QAPs are supported as `list` operations on the submissions collection don't need filtering, given the absence of user roles or permissions.\n\nEach document within the `submissions` collection will represent a single user's submission, containing all the relevant data (answers, score, timestamps, etc.)."
+  }
+}
