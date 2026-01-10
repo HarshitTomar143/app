@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -18,89 +18,168 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
+import { collection, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import type { ExamSection } from '@/lib/types';
+import { answerKey } from '@/data/answerKey';
 
 
 type Answers = { [key: string]: string };
-
 const options = ['A', 'B', 'C', 'D'];
-
-// This will be replaced with data fetched from Firestore
-const sections = [{ name: "General Knowledge", questionCount: 100, order: 1 }];
-const questions = Array.from({ length: 100 }, (_, i) => i + 1);
-
 
 export default function OMRSheet() {
   const [answers, setAnswers] = useState<Answers>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const firestore = useFirestore();
+
+  const sectionsQuery = useMemoFirebase(
+    () => firestore ? query(collection(firestore, 'examSections'), orderBy('order')) : null,
+    [firestore]
+  );
+  const { data: sections, isLoading: isLoadingSections } = useCollection<ExamSection>(sectionsQuery);
+  
+  const questionsPerSection = useMemo(() => {
+    if (!sections) return {};
+    return sections.reduce((acc, section) => {
+      acc[section.id] = Array.from({ length: section.questionCount }, (_, i) => i + 1);
+      return acc;
+    }, {} as Record<string, number[]>);
+  }, [sections]);
+
+  const totalQuestions = useMemo(() => {
+    return sections?.reduce((total, section) => total + section.questionCount, 0) || 0;
+  }, [sections]);
+
 
   const handleAnswerChange = (questionId: string, value: string) => {
     setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
   const processSubmission = async () => {
+    if (!firestore) return;
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/submit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(answers),
-      });
+      // Evaluation logic
+      let correct = 0;
+      const attemptedKeys = Object.keys(answers);
+      const attempted = attemptedKeys.length;
 
-      if (!response.ok) {
-        throw new Error('Evaluation failed. Please try again.');
+      for (const questionCompositeKey of attemptedKeys) {
+        // The key is now `sectionId-questionNumber`
+        const [sectionId, questionNumStr] = questionCompositeKey.split('-');
+        // We need a way to map this back to a global question index for the answer key.
+        // This is a placeholder for a more robust mapping logic.
+        // For now, let's assume question keys in `answerKey` are `1`, `2`, `3`...
+        // This will need to be fixed if question numbers are not globally unique and sequential.
+        // We find the base index of the current section
+        let questionBaseIndex = 0;
+        if (sections) {
+          for (const sec of sections) {
+            if (sec.id === sectionId) break;
+            questionBaseIndex += sec.questionCount;
+          }
+        }
+        const globalQuestionIndex = questionBaseIndex + parseInt(questionNumStr, 10);
+        
+        if (answerKey[globalQuestionIndex] === answers[questionCompositeKey]) {
+          correct++;
+        }
       }
 
-      const results = await response.json();
-      setIsSubmitted(true);
+      const wrong = attempted - correct;
+      const score = correct; // Assuming 1 point per correct answer
+      const percentage = totalQuestions > 0 ? (correct / totalQuestions) * 100 : 0;
 
+      const results = {
+        totalQuestions,
+        attempted,
+        correct,
+        wrong,
+        score,
+        percentage,
+      };
+
+      const submissionData = {
+        answers: JSON.stringify(answers),
+        submittedAt: serverTimestamp(),
+        score,
+        correctCount: correct,
+        incorrectCount: wrong,
+        attemptedCount: attempted,
+        percentage,
+      };
+
+      const submissionsCollection = collection(firestore, 'submissions');
+      await addDocumentNonBlocking(submissionsCollection, submissionData);
+      
       const params = new URLSearchParams();
-      for (const key in results) {
-        params.append(key, results[key].toString());
-      }
+      Object.entries(results).forEach(([key, value]) => {
+        params.append(key, value.toString());
+      });
       
       router.push(`/result?${params.toString()}`);
 
     } catch (error) {
+      console.error("Submission error:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An unexpected error occurred.",
+        description: error instanceof Error ? error.message : "An unexpected error occurred during submission.",
         variant: "destructive",
       });
-    } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (isLoadingSections) {
+    return (
+      <div className="flex justify-center items-center p-10">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-4 text-lg text-muted-foreground">Loading Exam...</p>
+      </div>
+    );
+  }
+
+  if (!sections || sections.length === 0) {
+    return (
+        <div className="text-center p-10 bg-secondary/30 rounded-lg">
+            <h2 className="text-2xl font-semibold text-primary">No Exam Found</h2>
+            <p className="text-muted-foreground mt-2">
+                It looks like no exam sections have been configured. Please visit the admin panel to set up the exam.
+            </p>
+            <Button asChild className="mt-6">
+                <a href="/admin">Go to Admin Panel</a>
+            </Button>
+        </div>
+    );
+  }
 
   return (
     <>
       <div className="space-y-8">
         {sections.map(section => (
-          <div key={section.name}>
+          <div key={section.id}>
             <h2 className="text-2xl font-bold tracking-tight text-primary mb-4">{section.name}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {Array.from({ length: section.questionCount }, (_, i) => i + 1).map((q) => (
-                <Card key={`${section.name}-${q}`} className="shadow-sm hover:shadow-lg transition-shadow duration-300 bg-card border">
+              {questionsPerSection[section.id]?.map((q) => (
+                <Card key={`${section.id}-${q}`} className="shadow-sm hover:shadow-lg transition-shadow duration-300 bg-card border">
                   <CardHeader className="flex-row items-center justify-between p-4">
                     <CardTitle className="text-lg text-primary font-bold">Question {q}</CardTitle>
                   </CardHeader>
                   <CardContent className="p-4 pt-0">
                     <RadioGroup
-                      value={answers[`${section.name}-${q}`] || ''}
-                      onValueChange={(value) => handleAnswerChange(`${section.name}-${q}`, value)}
-                      disabled={isSubmitted || isSubmitting}
+                      value={answers[`${section.id}-${q}`] || ''}
+                      onValueChange={(value) => handleAnswerChange(`${section.id}-${q}`, value)}
+                      disabled={isSubmitting}
                       className="flex space-x-6"
                     >
                       {options.map((option) => (
                         <div key={option} className="flex items-center space-x-2">
-                          <RadioGroupItem value={option} id={`q${section.name}-${q}-${option}`} aria-label={`Question ${q} Option ${option}`} className="w-5 h-5"/>
-                          <Label htmlFor={`q${section.name}-${q}-${option}`} className="text-base">{option}</Label>
+                          <RadioGroupItem value={option} id={`q${section.id}-${q}-${option}`} aria-label={`Question ${q} Option ${option}`} className="w-5 h-5"/>
+                          <Label htmlFor={`q${section.id}-${q}-${option}`} className="text-base">{option}</Label>
                         </div>
                       ))}
                     </RadioGroup>
@@ -118,15 +197,13 @@ export default function OMRSheet() {
             <Button
               size="lg"
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold w-full max-w-sm text-lg py-6 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-              disabled={isSubmitting || isSubmitted}
+              disabled={isSubmitting || Object.keys(answers).length === 0}
             >
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Evaluating...
                 </>
-              ) : isSubmitted ? (
-                'Submitted Successfully'
               ) : (
                 'Submit & View Results'
               )}
