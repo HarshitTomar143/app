@@ -28,7 +28,7 @@ export default function HomePage() {
     const { data: sections, isLoading: isLoadingSections } = useCollection<ExamSection>(sectionsQuery);
     
     // Determine the final exam type based on admin config and user's choice
-    const resolvedExamType = userChoice || examConfig?.activeExamType;
+    const examType = examConfig?.activeExamType;
 
     if (isLoadingConfig || isLoadingSections) {
         return (
@@ -57,7 +57,9 @@ export default function HomePage() {
         )
     }
     
-    // Render the OMR page if a specific exam type has been resolved
+    // Render the OMR page if a specific exam type has been resolved by user choice or admin setting
+    const resolvedExamType = userChoice || (examType !== 'choice' ? examType : null);
+
     if (resolvedExamType === 'single') {
         const singleSection: ExamSection[] = [{
             id: 'single',
