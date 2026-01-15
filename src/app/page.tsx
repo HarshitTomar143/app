@@ -12,7 +12,7 @@ import { FileText, Layers } from 'lucide-react';
 
 
 export default function HomePage() {
-    const [examType, setExamType] = useState<'single' | 'multi' | null>(null);
+    const [userChoice, setUserChoice] = useState<'single' | 'multi' | null>(null);
     const firestore = useFirestore();
 
     const configDocRef = useMemoFirebase(
@@ -27,7 +27,8 @@ export default function HomePage() {
     );
     const { data: sections, isLoading: isLoadingSections } = useCollection<ExamSection>(sectionsQuery);
     
-    const resolvedExamType = examType || examConfig?.activeExamType;
+    // Determine the final exam type based on admin config and user's choice
+    const resolvedExamType = userChoice || examConfig?.activeExamType;
 
     if (isLoadingConfig || isLoadingSections) {
         return (
@@ -56,6 +57,7 @@ export default function HomePage() {
         )
     }
     
+    // Render the OMR page if a specific exam type has been resolved
     if (resolvedExamType === 'single') {
         const singleSection: ExamSection[] = [{
             id: 'single',
@@ -87,8 +89,7 @@ export default function HomePage() {
         return <OMRPage sections={sections} />;
     }
 
-
-    // Let user choose
+    // Default to the choice screen if activeExamType is 'choice' and user hasn't chosen
     return (
         <main className="container mx-auto px-4 py-12">
             <div className="text-center mb-12">
@@ -107,7 +108,7 @@ export default function HomePage() {
                         <CardDescription>An exam with {examConfig.singleSectionQuestionCount} questions in one continuous section.</CardDescription>
                     </CardHeader>
                     <CardContent className="text-center">
-                        <Button size="lg" onClick={() => setExamType('single')}>
+                        <Button size="lg" onClick={() => setUserChoice('single')}>
                             Start Single Section Exam
                         </Button>
                     </CardContent>
@@ -120,7 +121,7 @@ export default function HomePage() {
                         <CardDescription>An exam divided into multiple timed sections based on subjects.</CardDescription>
                     </CardHeader>
                     <CardContent className="text-center">
-                         <Button size="lg" onClick={() => setExamType('multi')} disabled={!sections || sections.length === 0} variant="secondary">
+                         <Button size="lg" onClick={() => setUserChoice('multi')} disabled={!sections || sections.length === 0} variant="secondary">
                             Start Multi-Section Exam
                         </Button>
                         {(!sections || sections.length === 0) && (
