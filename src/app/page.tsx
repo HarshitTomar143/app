@@ -74,7 +74,7 @@ export default function HomePage() {
                 questionCount: examConfig.singleSectionQuestionCount,
                 order: 1,
             }];
-            return <OMRPage sections={singleSection} setNumber={selectedSet} />;
+            return <OMRPage sections={singleSection} setNumber={selectedSet} examType="single" />;
         }
 
         if (resolvedExamType === 'multi') {
@@ -95,7 +95,7 @@ export default function HomePage() {
                     </main>
                 );
             }
-            return <OMRPage sections={sections} setNumber={selectedSet} />;
+            return <OMRPage sections={sections} setNumber={selectedSet} examType="multi" />;
         }
     }
 
@@ -183,7 +183,7 @@ function SetSelectionScreen({ examConfig, onSelectSet }: { examConfig: ExamConfi
 }
 
 
-function OMRPage({ sections, setNumber }: { sections: ExamSection[]; setNumber: number }) {
+function OMRPage({ sections, setNumber, examType }: { sections: ExamSection[]; setNumber: number; examType: 'single' | 'multi' }) {
     const totalQuestions = sections.reduce((acc, sec) => acc + sec.questionCount, 0);
     return (
         <main className="container mx-auto px-4 py-12">
@@ -201,7 +201,7 @@ function OMRPage({ sections, setNumber }: { sections: ExamSection[]; setNumber: 
                 </div>
 
             </div>
-            <OMRSheet sections={sections} setNumber={setNumber} />
+            <OMRSheet sections={sections} setNumber={setNumber} examType={examType} />
         </main>
     );
 }

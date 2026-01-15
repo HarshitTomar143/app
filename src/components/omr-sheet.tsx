@@ -22,7 +22,7 @@ import {
 import { useFirestore, addDocumentNonBlocking } from '@/firebase';
 import { collection, serverTimestamp } from 'firebase/firestore';
 import type { ExamSection } from '@/lib/types';
-import { answerKey } from '@/data/answerKey';
+import { answerKeys } from '@/data/answerKey';
 
 
 type Answers = { [key: string]: string };
@@ -31,9 +31,10 @@ const options = ['A', 'B', 'C', 'D'];
 interface OMRSheetProps {
     sections: ExamSection[];
     setNumber: number;
+    examType: 'single' | 'multi';
 }
 
-export default function OMRSheet({ sections, setNumber }: OMRSheetProps) {
+export default function OMRSheet({ sections, setNumber, examType }: OMRSheetProps) {
   const [answers, setAnswers] = useState<Answers>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -61,6 +62,12 @@ export default function OMRSheet({ sections, setNumber }: OMRSheetProps) {
     setIsSubmitting(true);
 
     try {
+      // Select the correct answer key based on exam type and set number
+      const correctKeySet = answerKeys[examType]?.[setNumber];
+      if (!correctKeySet) {
+        throw new Error(`Answer key for exam type "${examType}" and set "${setNumber}" not found.`);
+      }
+
       // Evaluation logic
       let correct = 0;
       const attemptedKeys = Object.keys(answers);
@@ -77,8 +84,7 @@ export default function OMRSheet({ sections, setNumber }: OMRSheetProps) {
         
         const globalQuestionIndex = questionBaseIndex + parseInt(questionNumStr, 10);
         
-        // TODO: Update answerKey logic to be set-dependent
-        if (answerKey[globalQuestionIndex] === answers[questionCompositeKey]) {
+        if (correctKeySet[globalQuestionIndex] === answers[questionCompositeKey]) {
           correct++;
         }
       }
