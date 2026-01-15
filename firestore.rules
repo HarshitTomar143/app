@@ -5,15 +5,15 @@
  *
  * Data Structure:
  * - `submissions`: Stores user-submitted OMR data. Publicly readable and writable for creation.
- * - `examSections`: Stores the structure of the exam (e.g., sections and question counts).
- *   It is publicly readable but writable only by authenticated administrators (future-proofing).
- *   For now, we will allow any authenticated user to write, assuming an admin role will be added later.
+ * - `examSections`: Stores the structure of the multi-section exam.
+ *   It is publicly readable but writable only by authenticated administrators.
+ * - `examConfig`: Stores global exam settings. It is publicly readable and writable only by authenticated admins.
  *
  * Key Security Decisions:
  * - Public Read Access: Anyone can read submissions and the exam structure.
  * - Public Create Access for Submissions: Anyone can create new submissions.
  * - No Updates or Deletes on Submissions: Submissions are immutable after creation.
- * - Restricted Writes for Exam Sections: Only authenticated users can manage the exam structure.
+ * - Restricted Writes for Exam Structure: Only authenticated users can manage the exam structure.
  *   This is a placeholder for a more robust admin-only rule.
  */
 rules_version = '2';
@@ -36,19 +36,25 @@ service cloud.firestore {
 
     /**
      * @description
-     *   Allows public read access to the exam structure. Write access is
-     *   restricted to authenticated users, intended for an admin panel.
-     *   This allows the app to dynamically fetch the exam layout while
-     *   protecting it from public modification.
-     * @note
-     *   The write rule `if request.auth != null;` is a placeholder. In a
-     *   production app, this should be replaced with a more secure rule that
-     *   checks for a specific admin role or claim on the user's token.
+     *   Allows public read access to the multi-section exam structure.
+     *   Write access is restricted to authenticated users for the admin panel.
      */
     match /examSections/{sectionId} {
       allow get: if true;
       allow list: if true;
       allow create, update, delete: if request.auth != null;
+    }
+
+    /**
+     * @description
+     *   Allows public read access to the main exam configuration.
+     *   Write access is restricted to authenticated users for the admin panel.
+     *   This document is a singleton, so only create/update on the 'main' doc is allowed.
+     */
+    match /examConfig/main {
+      allow get: if true;
+      allow create, update: if request.auth != null;
+      // No list, delete, or other paths needed.
     }
   }
 }

@@ -19,8 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking } from '@/firebase';
-import { collection, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection, serverTimestamp } from 'firebase/firestore';
 import type { ExamSection } from '@/lib/types';
 import { answerKey } from '@/data/answerKey';
 
@@ -28,21 +28,18 @@ import { answerKey } from '@/data/answerKey';
 type Answers = { [key: string]: string };
 const options = ['A', 'B', 'C', 'D'];
 
-export default function OMRSheet() {
+interface OMRSheetProps {
+    sections: ExamSection[];
+}
+
+export default function OMRSheet({ sections }: OMRSheetProps) {
   const [answers, setAnswers] = useState<Answers>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
   const firestore = useFirestore();
-
-  const sectionsQuery = useMemoFirebase(
-    () => firestore ? query(collection(firestore, 'examSections'), orderBy('order')) : null,
-    [firestore]
-  );
-  const { data: sections, isLoading: isLoadingSections } = useCollection<ExamSection>(sectionsQuery);
   
   const questionsPerSection = useMemo(() => {
-    if (!sections) return {};
     return sections.reduce((acc, section) => {
       acc[section.id] = Array.from({ length: section.questionCount }, (_, i) => i + 1);
       return acc;
@@ -50,7 +47,7 @@ export default function OMRSheet() {
   }, [sections]);
 
   const totalQuestions = useMemo(() => {
-    return sections?.reduce((total, section) => total + section.questionCount, 0) || 0;
+    return sections.reduce((total, section) => total + section.questionCount, 0);
   }, [sections]);
 
 
@@ -69,20 +66,14 @@ export default function OMRSheet() {
       const attempted = attemptedKeys.length;
 
       for (const questionCompositeKey of attemptedKeys) {
-        // The key is now `sectionId-questionNumber`
         const [sectionId, questionNumStr] = questionCompositeKey.split('-');
-        // We need a way to map this back to a global question index for the answer key.
-        // This is a placeholder for a more robust mapping logic.
-        // For now, let's assume question keys in `answerKey` are `1`, `2`, `3`...
-        // This will need to be fixed if question numbers are not globally unique and sequential.
-        // We find the base index of the current section
         let questionBaseIndex = 0;
-        if (sections) {
-          for (const sec of sections) {
-            if (sec.id === sectionId) break;
-            questionBaseIndex += sec.questionCount;
-          }
+        
+        for (const sec of sections) {
+          if (sec.id === sectionId) break;
+          questionBaseIndex += sec.questionCount;
         }
+        
         const globalQuestionIndex = questionBaseIndex + parseInt(questionNumStr, 10);
         
         if (answerKey[globalQuestionIndex] === answers[questionCompositeKey]) {
@@ -133,15 +124,6 @@ export default function OMRSheet() {
       setIsSubmitting(false);
     }
   };
-
-  if (isLoadingSections) {
-    return (
-      <div className="flex justify-center items-center p-10">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-4 text-lg text-muted-foreground">Loading Exam...</p>
-      </div>
-    );
-  }
 
   if (!sections || sections.length === 0) {
     return (
