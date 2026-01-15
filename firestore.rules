@@ -27,11 +27,8 @@ service cloud.firestore {
      *   existing submissions to ensure data integrity.
      */
     match /submissions/{submissionId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if true;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list, create: if true;
+      allow update, delete: if false;
     }
 
     /**
@@ -40,8 +37,7 @@ service cloud.firestore {
      *   Write access is restricted to authenticated users for the admin panel.
      */
     match /examSections/{sectionId} {
-      allow get: if true;
-      allow list: if true;
+      allow get, list: if true;
       allow create, update, delete: if request.auth != null;
     }
 
@@ -51,10 +47,9 @@ service cloud.firestore {
      *   Write access is restricted to authenticated users for the admin panel.
      *   This document is a singleton, so only create/update on the 'main' doc is allowed.
      */
-    match /examConfig/main {
-      allow get: if true;
-      allow create, update: if request.auth != null;
-      // No list, delete, or other paths needed.
+    match /examConfig/{docId} {
+       allow get, list: if true;
+       allow create, update, delete: if request.auth != null;
     }
   }
 }
