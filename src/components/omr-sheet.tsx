@@ -30,9 +30,10 @@ const options = ['A', 'B', 'C', 'D'];
 
 interface OMRSheetProps {
     sections: ExamSection[];
+    setNumber: number;
 }
 
-export default function OMRSheet({ sections }: OMRSheetProps) {
+export default function OMRSheet({ sections, setNumber }: OMRSheetProps) {
   const [answers, setAnswers] = useState<Answers>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -76,6 +77,7 @@ export default function OMRSheet({ sections }: OMRSheetProps) {
         
         const globalQuestionIndex = questionBaseIndex + parseInt(questionNumStr, 10);
         
+        // TODO: Update answerKey logic to be set-dependent
         if (answerKey[globalQuestionIndex] === answers[questionCompositeKey]) {
           correct++;
         }
@@ -102,6 +104,7 @@ export default function OMRSheet({ sections }: OMRSheetProps) {
         incorrectCount: wrong,
         attemptedCount: attempted,
         percentage,
+        setNumber,
       };
 
       const submissionsCollection = collection(firestore, 'submissions');

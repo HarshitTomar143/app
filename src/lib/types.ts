@@ -9,4 +9,5 @@ export interface ExamConfig {
     id: string;
     activeExamType: 'single' | 'multi' | 'choice';
     singleSectionQuestionCount: number;
+    numberOfSets: number;
 }

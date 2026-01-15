@@ -68,6 +68,7 @@ const multiSectionFormSchema = z.object({
 const singleSectionFormSchema = z.object({
     singleSectionQuestionCount: z.coerce.number().min(1, { message: 'Must have at least 1 question.' }),
     activeExamType: z.enum(['single', 'multi', 'choice']),
+    numberOfSets: z.coerce.number().min(1, { message: 'Must have at least 1 set.' }),
 });
 
 
@@ -110,6 +111,7 @@ export default function AdminPage() {
     defaultValues: {
         singleSectionQuestionCount: 100,
         activeExamType: 'choice',
+        numberOfSets: 3,
     }
   });
 
@@ -118,6 +120,7 @@ export default function AdminPage() {
       singleSectionForm.reset({
         singleSectionQuestionCount: examConfig.singleSectionQuestionCount || 100,
         activeExamType: examConfig.activeExamType || 'choice',
+        numberOfSets: examConfig.numberOfSets || 3,
       });
     }
   }, [examConfig, singleSectionForm]);
@@ -163,6 +166,7 @@ export default function AdminPage() {
       const configData: Omit<ExamConfig, 'id'> = {
         singleSectionQuestionCount: values.singleSectionQuestionCount,
         activeExamType: values.activeExamType,
+        numberOfSets: values.numberOfSets,
       };
 
       await setDocumentNonBlocking(configDocRef, configData, { merge: true });
@@ -344,7 +348,7 @@ export default function AdminPage() {
                             render={({ field }) => (
                                 <FormItem>
                                 <FormLabel>Active Exam for Users</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select an exam type" />
@@ -368,6 +372,19 @@ export default function AdminPage() {
                                 <FormLabel>Single-Section Question Count</FormLabel>
                                 <FormControl>
                                     <Input type="number" placeholder="e.g., 100" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={singleSectionForm.control}
+                            name="numberOfSets"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Number of Question Sets</FormLabel>
+                                <FormControl>
+                                    <Input type="number" placeholder="e.g., 3" {...field} />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>

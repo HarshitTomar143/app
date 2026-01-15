@@ -38,6 +38,10 @@
         "percentage": {
           "type": "number",
           "description": "The overall percentage score of the submission."
+        },
+        "setNumber": {
+            "type": "number",
+            "description": "The selected question paper set number."
         }
       },
       "required": [
@@ -48,7 +52,8 @@
         "correctCount",
         "incorrectCount",
         "attemptedCount",
-        "percentage"
+        "percentage",
+        "setNumber"
       ]
     },
     "ExamSection": {
@@ -85,9 +90,13 @@
         "singleSectionQuestionCount": {
           "type": "number",
           "description": "Total number of questions for the single-section exam."
+        },
+        "numberOfSets": {
+            "type": "number",
+            "description": "The number of question paper sets available for the exams."
         }
       },
-      "required": ["activeExamType", "singleSectionQuestionCount"]
+      "required": ["activeExamType", "singleSectionQuestionCount", "numberOfSets"]
     }
   },
   "auth": {

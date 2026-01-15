@@ -8,11 +8,12 @@ import type { ExamConfig, ExamSection } from '@/lib/types';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { FileText, Layers } from 'lucide-react';
+import { FileText, Layers, BookCopy } from 'lucide-react';
 
 
 export default function HomePage() {
     const [userChoice, setUserChoice] = useState<'single' | 'multi' | null>(null);
+    const [selectedSet, setSelectedSet] = useState<number | null>(null);
     const firestore = useFirestore();
 
     const configDocRef = useMemoFirebase(
@@ -57,39 +58,47 @@ export default function HomePage() {
         )
     }
     
-    // Render the OMR page if a specific exam type has been resolved by user choice or admin setting
     const resolvedExamType = userChoice || (examType !== 'choice' ? examType : null);
 
-    if (resolvedExamType === 'single') {
-        const singleSection: ExamSection[] = [{
-            id: 'single',
-            name: 'OMR Exam',
-            questionCount: examConfig.singleSectionQuestionCount,
-            order: 1,
-        }];
-        return <OMRPage sections={singleSection} />;
+    // If an exam type is resolved but no set is selected, show set selection
+    if (resolvedExamType && !selectedSet) {
+        return <SetSelectionScreen examConfig={examConfig} onSelectSet={setSelectedSet} />
     }
 
-    if (resolvedExamType === 'multi') {
-        if (!sections || sections.length === 0) {
-             return (
-                <main className="container mx-auto px-4 py-12 text-center">
-                    <Card className="max-w-lg mx-auto">
-                        <CardHeader>
-                            <CardTitle>No Sections Found</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <p className="text-muted-foreground mb-6">The multi-section exam is active, but no sections have been added. Please configure them in the admin panel.</p>
-                            <Button asChild>
-                                <Link href="/admin">Go to Admin Panel</Link>
-                            </Button>
-                        </CardContent>
-                    </Card>
-                </main>
-            );
+    // Render the OMR page if a specific exam type and set have been selected
+    if (resolvedExamType && selectedSet) {
+         if (resolvedExamType === 'single') {
+            const singleSection: ExamSection[] = [{
+                id: 'single',
+                name: 'OMR Exam',
+                questionCount: examConfig.singleSectionQuestionCount,
+                order: 1,
+            }];
+            return <OMRPage sections={singleSection} setNumber={selectedSet} />;
         }
-        return <OMRPage sections={sections} />;
+
+        if (resolvedExamType === 'multi') {
+            if (!sections || sections.length === 0) {
+                return (
+                    <main className="container mx-auto px-4 py-12 text-center">
+                        <Card className="max-w-lg mx-auto">
+                            <CardHeader>
+                                <CardTitle>No Sections Found</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-muted-foreground mb-6">The multi-section exam is active, but no sections have been added. Please configure them in the admin panel.</p>
+                                <Button asChild>
+                                    <Link href="/admin">Go to Admin Panel</Link>
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </main>
+                );
+            }
+            return <OMRPage sections={sections} setNumber={selectedSet} />;
+        }
     }
+
 
     // Default to the choice screen if activeExamType is 'choice' and user hasn't chosen
     return (
@@ -141,7 +150,40 @@ export default function HomePage() {
     );
 }
 
-function OMRPage({ sections }: { sections: ExamSection[] }) {
+function SetSelectionScreen({ examConfig, onSelectSet }: { examConfig: ExamConfig, onSelectSet: (set: number) => void }) {
+    const sets = Array.from({ length: examConfig.numberOfSets || 1 }, (_, i) => i + 1);
+
+    return (
+        <main className="container mx-auto px-4 py-12">
+            <div className="text-center mb-12">
+                <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-primary">
+                    Select Your Question Paper Set
+                </h1>
+                <p className="text-muted-foreground mt-3 text-lg max-w-2xl mx-auto">
+                    Please choose the set number that matches your question paper.
+                </p>
+            </div>
+            <div className="flex justify-center flex-wrap gap-6">
+                {sets.map(setNumber => (
+                    <Card key={setNumber} className="w-full max-w-xs hover:shadow-lg hover:-translate-y-1 transition-all">
+                        <CardHeader className="text-center">
+                            <BookCopy className="w-12 h-12 mx-auto text-primary" />
+                            <CardTitle className="mt-4">Set {setNumber}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                            <Button size="lg" onClick={() => onSelectSet(setNumber)}>
+                                Select Set {setNumber}
+                            </Button>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </main>
+    );
+}
+
+
+function OMRPage({ sections, setNumber }: { sections: ExamSection[]; setNumber: number }) {
     const totalQuestions = sections.reduce((acc, sec) => acc + sec.questionCount, 0);
     return (
         <main className="container mx-auto px-4 py-12">
@@ -149,11 +191,17 @@ function OMRPage({ sections }: { sections: ExamSection[] }) {
                 <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-primary">
                 Digital OMR Evaluation
                 </h1>
-                <p className="text-muted-foreground mt-3 text-lg max-w-2xl mx-auto">
-                Mark your answers for the {totalQuestions} questions below. Once you're finished, click the submit button to see your results.
-                </p>
+                <div className='flex justify-center items-center gap-4'>
+                    <p className="text-muted-foreground mt-3 text-lg max-w-2xl mx-auto">
+                    Mark your answers for the {totalQuestions} questions below.
+                    </p>
+                    <span className="inline-block bg-primary/10 text-primary font-bold py-1 px-3 rounded-full text-lg mt-2">
+                        Set {setNumber}
+                    </span>
+                </div>
+
             </div>
-            <OMRSheet sections={sections} />
+            <OMRSheet sections={sections} setNumber={setNumber} />
         </main>
     );
 }
